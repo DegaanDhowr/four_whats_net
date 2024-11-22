@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "WMSG-.YYYY.-.#####",
  "creation": "2023-04-27 18:56:36.561244",
  "default_view": "List",
  "doctype": "DocType",
@@ -13,7 +14,7 @@
  "fields": [
   {
    "fieldname": "phone",
-   "fieldtype": "Phone",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Phone Number",
    "reqd": 1
@@ -26,10 +27,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-27 18:56:36.561244",
+ "modified": "2024-11-22 20:14:43.597784",
  "modified_by": "Administrator",
  "module": "Four Whats Net",
  "name": "Four Whats Messages",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

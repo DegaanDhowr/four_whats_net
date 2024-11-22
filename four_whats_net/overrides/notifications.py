@@ -46,6 +46,9 @@ class ERPGulfNotification(Notification):
             receiverNumbers.append(phoneNumber)
             url = f"{settings.api_url}/sendMessage/?instanceid={settings.instance_id}&token={settings.token}&phone={phoneNumber}&body={message}"
             response = requests.get(url)
+
+            # Save the message details to the "Four Whats Messages" doctype
+            self.create_message_record(phoneNumber, message)
         frappe.msgprint(_(f"Whatsapp message sent to {','.join(receiverNumbers)}"))
     
     def get_receiver_phone_number(self, number):
@@ -64,3 +67,32 @@ class ERPGulfNotification(Notification):
             phoneNumber = phoneNumber[1:]
         
         return phoneNumber   
+    
+    def create_message_record(self, phone, message):
+        """Create a new record in the Four Whats Messages doctype."""
+        try:
+            # Clean the phone number by removing existing country codes or duplicates
+            phone = phone.strip().replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
+            
+            # Remove existing country code if it starts with "252"
+            if phone.startswith("252"):
+                phone = phone[3:]
+            
+            # Remove leading zero if present
+            if phone.startswith("0"):
+                phone = phone[1:]
+            
+            # Add the correct country code
+            phone = f"+252{phone}"
+
+            # Create the new doctype record
+            doc = frappe.get_doc({
+                "doctype": "Four Whats Messages",
+                "phone": phone,
+                "receiver_name": message,  # Adjust this field to map to the correct value
+            })
+            doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), _("Failed to create Four Whats Messages record"))
