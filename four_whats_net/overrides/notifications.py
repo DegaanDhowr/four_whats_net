@@ -12,9 +12,9 @@ class ERPGulfNotification(Notification):
 
     def validate_custom_settings(self):
         if self.enabled:
-            if self.channel == "SMSHormuud":
+            if self.channel == "4Whats.net":
                 self.validate_hormuud_sms_settings()
-            elif self.channel == "4Whats.net":
+            elif self.channel == "SMSHormuud":
                 self.validate_four_whats_settings()
 
     def validate_hormuud_sms_settings(self):
@@ -56,7 +56,7 @@ class ERPGulfNotification(Notification):
             phone_number = self.format_phone_number(number)
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
-            self.create_message_record("Hormuud SMS Messages", phone_number, message)
+            self.create_message_sms(phone_number, message)
         frappe.msgprint(_(f"Hormuud SMS sent to {', '.join(receiver_numbers)}"))
 
     def send_whatsapp_msg(self, doc, context):
@@ -120,6 +120,18 @@ class ERPGulfNotification(Notification):
         except Exception as e:
             frappe.log_error(frappe.get_traceback(), _(f"Failed to create {doctype} record"))
 
+    def create_message_sms(self, phone, message):
+        """Create a record in the Hormuud SMS Messages doctype."""
+        try:
+            doc = frappe.get_doc({
+                "doctype": "Hormuud SMS Messages",
+                "phone_number": phone,
+                "messege": message
+            })
+            doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(frappe.get_traceback(), _("Failed to create Hormuud SMS Messages record"))
     def get_access_token(self):
         sms_settings = frappe.get_doc("Hormuud SMS Configuration")
         if not sms_settings.token or self.is_access_token_expired():
