@@ -109,8 +109,9 @@ doctype_js = {
 }
 
 override_doctype_class = {
-	"Notification": "four_whats_net.overrides.notifications.ERPGulfNotification"
- }
+	"Notification": "four_whats_net.overrides.notifications.ERPGulfNotification",
+	"Notification": "four_whats_net.overrides.notifications.HormuudSMSNotification",
+}
 
 # Document Events
 # ---------------
