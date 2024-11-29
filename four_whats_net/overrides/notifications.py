@@ -167,12 +167,10 @@ class HormuudSMSNotification(Notification):
         except Exception as e:
             frappe.throw(f"Failed to fetch access token: {str(e)}")
 
-
-class ERPGulfNotification(Notification):
     
     def validate(self):
         self.validate_four_whats_settings()
-        super(ERPGulfNotification, self).validate()
+        super(HormuudSMSNotification, self).validate()
     
     def validate_four_whats_settings(self):
         settings = frappe.get_doc("Four Whats Net Configuration")
@@ -194,7 +192,7 @@ class ERPGulfNotification(Notification):
                 self.send_whatsapp_msg(doc, context)
         except:
             frappe.log_error(title='Failed to send notification', message=frappe.get_traceback())
-        super(ERPGulfNotification, self).send(doc)
+        super(HormuudSMSNotification, self).send(doc)
         
     
     def send_whatsapp_msg(self, doc, context):
