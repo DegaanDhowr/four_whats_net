@@ -69,7 +69,7 @@ class ERPGulfNotification(Notification):
             phone_number = self.format_phone_number(number)
             receiver_numbers.append(phone_number)
             self.send_whatsapp(settings, phone_number, message)
-            self.create_message_record("Four Whats Messages", phone_number, message)
+            self.create_message_record(phone_number, message)
         frappe.msgprint(_(f"WhatsApp message sent to {', '.join(receiver_numbers)}"))
 
     def format_phone_number(self, number):
@@ -112,13 +112,34 @@ class ERPGulfNotification(Notification):
             frappe.log_error(frappe.get_traceback(), _("Failed to send WhatsApp message"))
             frappe.throw(f"Failed to send WhatsApp message: {str(e)}")
 
-    def create_message_record(self, doctype, phone, message):
+    def create_message_record(self, phone, message):
+        """Create a new record in the Four Whats Messages doctype."""
         try:
-            doc = frappe.get_doc({"doctype": doctype, "phone_number": phone, "message": message})
+            # Clean the phone number by removing existing country codes or duplicates
+            phone = phone.strip().replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
+            
+            # Remove existing country code if it starts with "252"
+            if phone.startswith("252"):
+                phone = phone[3:]
+            
+            # Remove leading zero if present
+            if phone.startswith("0"):
+                phone = phone[1:]
+            
+            # Add the correct country code
+            phone = f"+252{phone}"
+
+            # Create the new doctype record
+            doc = frappe.get_doc({
+                "doctype": "Four Whats Messages",
+                "phone": phone,
+                "receiver_name": message,  # Adjust this field to map to the correct value
+            })
             doc.insert(ignore_permissions=True)
             frappe.db.commit()
+
         except Exception as e:
-            frappe.log_error(frappe.get_traceback(), _(f"Failed to create {doctype} record"))
+            frappe.log_error(frappe.get_traceback(), _("Failed to create Four Whats Messages record"))
 
     def create_message_sms(self, phone, message):
         """Create a record in the Hormuud SMS Messages doctype."""
