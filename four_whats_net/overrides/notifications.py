@@ -54,10 +54,16 @@ class ERPGulfNotification(Notification):
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
             phone_number = self.get_receiver_phone_number(number)
+            
+            # Skip sending if phone number is invalid
+            if not phone_number:
+                continue
+            
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
             self.create_message_sms(phone_number, message)
         frappe.msgprint(_(f"Hormuud SMS sent to {', '.join(receiver_numbers)}"))
+
 
     def send_whatsapp_msg(self, doc, context):
         settings = frappe.get_doc("Four Whats Net Configuration")
@@ -67,27 +73,41 @@ class ERPGulfNotification(Notification):
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
             phone_number = self.get_receiver_phone_number(number)
+            
+            # Skip sending if phone number is invalid
+            if not phone_number:
+                continue
+            
             receiver_numbers.append(phone_number)
             self.send_whatsapp(settings, phone_number, message)
             self.create_message_record(phone_number, message)
         frappe.msgprint(_(f"WhatsApp message sent to {', '.join(receiver_numbers)}"))
 
+
     def get_receiver_phone_number(self, number):
-        phoneNumber = number.replace("+","").replace("-","")
-        if phoneNumber.startswith("+") == True:
-            phoneNumber = phoneNumber[1:]
-        elif phoneNumber.startswith("00") == True:
-            phoneNumber = phoneNumber[2:]
-        elif phoneNumber.startswith("0") == True:
-            if len(phoneNumber) == 10:
-                phoneNumber = "252" + phoneNumber[1:]
-        else:
-            if len(phoneNumber) < 10: 
-                phoneNumber ="252" + phoneNumber
-        if phoneNumber.startswith("0") == True:
-            phoneNumber = phoneNumber[1:]
+        # Clean and normalize the phone number
+        phone_number = number.replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
         
-        return phoneNumber 
+        # Handle different formats of phone numbers
+        if phone_number.startswith("00"):
+            phone_number = phone_number[2:]  # Remove international dial prefix
+        elif phone_number.startswith("0"):
+            if len(phone_number) == 10:  # Assume local number format
+                phone_number = "252" + phone_number[1:]  # Add Somalia's country code
+        
+        # Add country code for incomplete numbers
+        if not phone_number.startswith("252"):
+            phone_number = "252" + phone_number
+    
+        # Validate phone number length
+        if len(phone_number) <= 10:  # Skip sending if phone number is too short
+            frappe.log_error(
+                message=f"Invalid phone number: {phone_number}. Number must be more than 10 digits.",
+                title="Invalid Phone Number"
+            )
+            return None  # Return None to skip this phone number
+    
+        return phone_number
 
     def send_sms(self, settings, phone_number, message):
         try:
