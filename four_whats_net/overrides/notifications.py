@@ -53,7 +53,7 @@ class ERPGulfNotification(Notification):
         for recipient in recipients:
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
-            phone_number = self.format_phone_number(number)
+            phone_number = self.get_receiver_phone_number(number)
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
             self.create_message_sms(phone_number, message)
@@ -66,19 +66,28 @@ class ERPGulfNotification(Notification):
         for recipient in recipients:
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
-            phone_number = self.format_phone_number(number)
+            phone_number = self.get_receiver_phone_number(number)
             receiver_numbers.append(phone_number)
             self.send_whatsapp(settings, phone_number, message)
             self.create_message_record(phone_number, message)
         frappe.msgprint(_(f"WhatsApp message sent to {', '.join(receiver_numbers)}"))
 
-    def format_phone_number(self, number):
-        phone_number = number.replace("+", "").replace("-", "").strip()
-        if phone_number.startswith("252"):
-            return f"+{phone_number}"
-        if phone_number.startswith("0"):
-            phone_number = phone_number[1:]
-        return f"+252{phone_number}"
+    def get_receiver_phone_number(self, number):
+        phoneNumber = number.replace("+","").replace("-","")
+        if phoneNumber.startswith("+") == True:
+            phoneNumber = phoneNumber[1:]
+        elif phoneNumber.startswith("00") == True:
+            phoneNumber = phoneNumber[2:]
+        elif phoneNumber.startswith("0") == True:
+            if len(phoneNumber) == 10:
+                phoneNumber = "252" + phoneNumber[1:]
+        else:
+            if len(phoneNumber) < 10: 
+                phoneNumber ="252" + phoneNumber
+        if phoneNumber.startswith("0") == True:
+            phoneNumber = phoneNumber[1:]
+        
+        return phoneNumber 
 
     def send_sms(self, settings, phone_number, message):
         try:
