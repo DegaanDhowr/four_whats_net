@@ -229,19 +229,19 @@ class ERPGulfNotification(Notification):
     def create_message_record(self, phone, message):
         """Create a new record in the Four Whats Messages doctype."""
         try:
-            # Clean the phone number by removing existing country codes or duplicates
-            phone = phone.strip().replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
+            # # Clean the phone number by removing existing country codes or duplicates
+            # phone = phone.strip().replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
             
-            # Remove existing country code if it starts with "252"
-            if phone.startswith("252"):
-                phone = phone[3:]
+            # # Remove existing country code if it starts with "252"
+            # if phone.startswith("252"):
+            #     phone = phone[3:]
             
-            # Remove leading zero if present
-            if phone.startswith("0"):
-                phone = phone[1:]
+            # # Remove leading zero if present
+            # if phone.startswith("0"):
+            #     phone = phone[1:]
             
-            # Add the correct country code
-            phone = f"+252{phone}"
+            # # Add the correct country code
+            # phone = f"+252{phone}"
 
             # Create the new doctype record
             doc = frappe.get_doc({
