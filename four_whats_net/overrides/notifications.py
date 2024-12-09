@@ -79,7 +79,7 @@ class ERPGulfNotification(Notification):
                     title="Invalid Phone Number"
                 )
                 continue  # Skip if the number doesn't match the length requirement
-            
+            frappe.msgprint("Numberka Wax Loo diri rabo waa ", phone_number)
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
             self.create_message_sms(phone_number, message)
