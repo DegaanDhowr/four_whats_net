@@ -218,11 +218,34 @@ class ERPGulfNotification(Notification):
             frappe.throw(f"Failed to send SMS: {str(e)}")
 
     def send_whatsapp(self, settings, phone_number, message):
-        url = f"{settings.api_url}/sendMessage/?instanceid={settings.instance_id}&token={settings.token}&phone={phone_number}&body={message}"
+        # Retrieve the API URL from settings
+        api_url = settings.api_url  # Assuming settings.api_url contains the base URL
+    
+        # Construct the full URL by appending the specific endpoint
+        url = f"{api_url}/api/sendText"
+        
+        # Prepare the data payload as a dictionary
+        data = {
+            "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
+            "reply_to": None,
+            "text": message,
+            "linkPreview": True,
+            "session": "default"
+        }
+    
+        # Set the headers to specify that we're sending JSON data
+        headers = {
+            "Content-Type": "application/json"
+        }
+    
         try:
-            response = requests.get(url)
+            # Send the POST request with the JSON data and headers
+            response = requests.post(url, data=json.dumps(data), headers=headers)
+            
+            # Raise an error if the response status code is not successful
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
+            # Log the error and raise an exception
             frappe.log_error(frappe.get_traceback(), _("Failed to send WhatsApp message"))
             frappe.throw(f"Failed to send WhatsApp message: {str(e)}")
 
