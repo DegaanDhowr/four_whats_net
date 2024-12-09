@@ -50,21 +50,45 @@ class ERPGulfNotification(Notification):
         settings = frappe.get_doc("Hormuud SMS Configuration")
         recipients = self.get_receiver_list(doc, context)
         receiver_numbers = []
-        
+    
         for recipient in recipients:
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
             phone_number = self.get_receiver_phone_number(number)
             
-            # Skip sending if phone number is invalid or does not start with 252
-            if not phone_number or not phone_number.startswith("252"):
-                continue
+            # Check if the phone number is invalid (None or empty)
+            if not phone_number:
+                frappe.log_error(
+                    message=f"Invalid phone number: {number}. The number is empty or could not be parsed.",
+                    title="Invalid Phone Number"
+                )
+                continue  # Skip sending if the phone number is empty or invalid
+            
+            # Check if the phone number doesn't start with "252"
+            if not phone_number.startswith("252"):
+                frappe.log_error(
+                    message=f"Invalid phone number: {phone_number}. The number doesn't start with Somalia's country code '252'.",
+                    title="Invalid Phone Number"
+                )
+                continue  # Skip sending if the number doesn't start with "252"
+    
+            # Additional validation check for Somalia phone number (must be 12 digits long, starting with 252)
+            if len(phone_number) != 12:
+                frappe.log_error(
+                    message=f"Invalid phone number: {phone_number}. It must be 12 digits long.",
+                    title="Invalid Phone Number"
+                )
+                continue  # Skip if the number doesn't match the length requirement
             
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
             self.create_message_sms(phone_number, message)
-        
-        frappe.msgprint(_(f"Hormuud SMS sent to {', '.join(receiver_numbers)}"))
+    
+        # Log a message showing which phone numbers the SMS was sent to
+        if receiver_numbers:
+            frappe.msgprint(_(f"Hormuud SMS sent to {', '.join(receiver_numbers)}"))
+        else:
+            frappe.msgprint(_("No valid phone numbers to send SMS to."))
 
 
 
