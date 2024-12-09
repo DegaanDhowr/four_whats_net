@@ -50,19 +50,22 @@ class ERPGulfNotification(Notification):
         settings = frappe.get_doc("Hormuud SMS Configuration")
         recipients = self.get_receiver_list(doc, context)
         receiver_numbers = []
+        
         for recipient in recipients:
             number = frappe.render_template(recipient, context)
             message = frappe.render_template(self.message, context)
             phone_number = self.get_receiver_phone_number(number)
             
-            # Skip sending if phone number is invalid
-            if not phone_number:
+            # Skip sending if phone number is invalid or does not start with 252
+            if not phone_number or not phone_number.startswith("252"):
                 continue
             
             receiver_numbers.append(phone_number)
             self.send_sms(settings, phone_number, message)
             self.create_message_sms(phone_number, message)
+        
         frappe.msgprint(_(f"Hormuud SMS sent to {', '.join(receiver_numbers)}"))
+
 
 
     def send_whatsapp_msg(self, doc, context):
@@ -88,17 +91,21 @@ class ERPGulfNotification(Notification):
         # Clean and normalize the phone number
         phone_number = number.replace("+", "").replace("-", "").replace(" ", "")  # Remove unwanted characters
         
+        # If the phone number starts with "254", return it as it is (Kenya's country code)
+        if phone_number.startswith("254"):
+            return phone_number
+        
         # Handle different formats of phone numbers
         if phone_number.startswith("00"):
             phone_number = phone_number[2:]  # Remove international dial prefix
         elif phone_number.startswith("0"):
-            if len(phone_number) == 10:  # Assume local number format
+            if len(phone_number) == 10:  # Assume local number format (for Somalia)
                 phone_number = "252" + phone_number[1:]  # Add Somalia's country code
         
         # Add country code for incomplete numbers
         if not phone_number.startswith("252"):
             phone_number = "252" + phone_number
-    
+        
         # Validate phone number length
         if len(phone_number) <= 10:  # Skip sending if phone number is too short
             frappe.log_error(
@@ -106,7 +113,7 @@ class ERPGulfNotification(Notification):
                 title="Invalid Phone Number"
             )
             return None  # Return None to skip this phone number
-    
+        
         return phone_number
 
     def send_sms(self, settings, phone_number, message):
