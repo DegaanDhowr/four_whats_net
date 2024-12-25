@@ -220,6 +220,7 @@ class ERPGulfNotification(Notification):
     def send_whatsapp(self, settings, phone_number, message):
         # Retrieve the API URL from settings
         api_url = settings.api_url  # Assuming settings.api_url contains the base URL
+        session = settings.instance_id
     
         # Construct the full URL by appending the specific endpoint
         url = f"{api_url}/api/sendText"
@@ -230,7 +231,7 @@ class ERPGulfNotification(Notification):
             "reply_to": None,
             "text": message,
             "linkPreview": True,
-            "session": "default"
+            "session": session
         }
     
         # Set the headers to specify that we're sending JSON data
