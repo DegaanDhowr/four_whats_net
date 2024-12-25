@@ -230,7 +230,7 @@ class ERPGulfNotification(Notification):
         document_doctype = doc.doctype
         
         # Fetch the attached files related to the document, dynamically using the doctype and name
-        file_records = frappe.get_all('File', filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, fields=['file_url', 'file_name', 'file_size', 'mimetype', 'attached_to_name', 'attached_to_doctype'])
+        file_records = frappe.get_all('File', filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype'])
         
         # Filter for PDF files specifically
         pdf_file = next((file for file in file_records if file['mimetype'] == 'application/pdf'), None)
