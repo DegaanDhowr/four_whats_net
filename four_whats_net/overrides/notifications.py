@@ -218,55 +218,47 @@ class ERPGulfNotification(Notification):
             frappe.throw(f"Failed to send SMS: {str(e)}")
 
     def send_whatsapp(self, settings, phone_number, message, doc):
-        # Retrieve the API URL from settings
         api_url = settings.api_url  # Assuming settings.api_url contains the base URL
         session = settings.instance_id
-        
-        # Construct the full URL by appending the specific endpoint
-        url = f"{api_url}/api/sendText"
-        
+    
+        # Construct the full URL for sending the file
+        url = f"{api_url}/api/sendFile"
+    
         # Fetch the doctype and document name dynamically
         document_name = doc.name
         document_doctype = doc.doctype
-        
-        # Fetch the attached files related to the document, dynamically using the doctype and name
+    
+        # Fetch the attached files related to the document dynamically using the doctype and name
         file_records = frappe.get_all(
             'File', 
             filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, 
             fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype']
         )
-        
+    
         # Filter for PDF files specifically
         pdf_file = next((file for file in file_records if file['file_type'] == 'PDF'), None)
-        
+    
         if pdf_file:
             # If a PDF file is found, extract necessary details
             file_url = pdf_file['file_url']
             file_type = pdf_file['file_type']
             file_name = pdf_file['file_name']
-            attached_to_name = pdf_file['attached_to_name']
-            attached_to_doctype = pdf_file['attached_to_doctype']
-            
-            # Log the document details for debugging purposes
-            frappe.log_error(f"Sending file from Document: {attached_to_doctype} - {attached_to_name}", "WhatsApp Notification")
-            
+    
             # Prepare the data payload to send the file
             file_data = {
                 "session": session,
                 "caption": message,  # You can modify this if you want a custom caption for the file
                 "chatId": f"{phone_number}@c.us",
                 "file": {
-                    "file_type": file_type,  # Correct field to indicate file type
+                    "mimetype": file_type,  # This will be 'application/pdf'
                     "filename": file_name,
                     "url": file_url
                 }
             }
     
-            # Change endpoint for sending files
-            url = f"{api_url}/api/sendFile"  
             data = json.dumps(file_data)
         else:
-            # If no file is found (or no PDF), only send text
+            # No PDF found, only send text
             data = json.dumps({
                 "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
                 "reply_to": None,
