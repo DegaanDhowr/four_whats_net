@@ -230,20 +230,24 @@ class ERPGulfNotification(Notification):
         document_doctype = doc.doctype
         
         # Fetch the attached files related to the document, dynamically using the doctype and name
-        file_records = frappe.get_all('File', filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype'])
+        file_records = frappe.get_all(
+            'File', 
+            filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, 
+            fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype']
+        )
         
         # Filter for PDF files specifically
-        pdf_file = next((file for file in file_records if file['mimetype'] == 'application/pdf'), None)
+        pdf_file = next((file for file in file_records if file['file_type'] == 'PDF'), None)
         
         if pdf_file:
             # If a PDF file is found, extract necessary details
             file_url = pdf_file['file_url']
-            mimetype = pdf_file['mimetype']
+            file_type = pdf_file['file_type']
             file_name = pdf_file['file_name']
             attached_to_name = pdf_file['attached_to_name']
             attached_to_doctype = pdf_file['attached_to_doctype']
             
-            # You can log or use `attached_to_name` and `attached_to_doctype` if you need to reference the document
+            # Log the document details for debugging purposes
             frappe.log_error(f"Sending file from Document: {attached_to_doctype} - {attached_to_name}", "WhatsApp Notification")
             
             # Prepare the data payload to send the file
@@ -252,16 +256,17 @@ class ERPGulfNotification(Notification):
                 "caption": message,  # You can modify this if you want a custom caption for the file
                 "chatId": f"{phone_number}@c.us",
                 "file": {
-                    "mimetype": mimetype,
+                    "file_type": file_type,  # Correct field to indicate file type
                     "filename": file_name,
                     "url": file_url
                 }
             }
     
-            url = f"{api_url}/api/sendFile"  # Change endpoint for sending files
+            # Change endpoint for sending files
+            url = f"{api_url}/api/sendFile"  
             data = json.dumps(file_data)
         else:
-            # No PDF found, only send text
+            # If no file is found (or no PDF), only send text
             data = json.dumps({
                 "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
                 "reply_to": None,
