@@ -106,7 +106,7 @@ class ERPGulfNotification(Notification):
                 continue
             
             receiver_numbers.append(phone_number)
-            self.send_whatsapp(settings, phone_number, message)
+            self.send_whatsapp(settings, phone_number, message, doc)
             self.create_message_record(phone_number, message)
         frappe.msgprint(_(f"WhatsApp message sent to {', '.join(receiver_numbers)}"))
 
