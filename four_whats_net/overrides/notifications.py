@@ -219,43 +219,44 @@ class ERPGulfNotification(Notification):
 
     def send_whatsapp(self, settings, phone_number, message, doc):
         api_url = settings.api_url  # Assuming settings.api_url contains the base URL
-        session = settings.instance_id
-    
+        session = settings.instance_id  # Session ID from the settings
+        
         # Construct the full URL for sending the file
         url = f"{api_url}/api/sendFile"
-    
+        
         # Fetch the doctype and document name dynamically
         document_name = doc.name
         document_doctype = doc.doctype
-    
+        
         # Fetch the attached files related to the document dynamically using the doctype and name
         file_records = frappe.get_all(
             'File', 
             filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, 
             fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype']
         )
-    
+        
         # Filter for PDF files specifically
         pdf_file = next((file for file in file_records if file['file_type'] == 'PDF'), None)
-    
+        
         if pdf_file:
             # If a PDF file is found, extract necessary details
             file_url = pdf_file['file_url']
-            file_type = pdf_file['file_type']
+            file_type = pdf_file['file_type']  # This will be 'PDF'
             file_name = pdf_file['file_name']
-    
+        
             # Prepare the data payload to send the file
             file_data = {
                 "session": session,
                 "caption": message,  # You can modify this if you want a custom caption for the file
                 "chatId": f"{phone_number}@c.us",
                 "file": {
-                    "mimetype": file_type,  # This will be 'application/pdf'
+                    "mimetype": "application/pdf",  # Set the mimetype as 'application/pdf'
                     "filename": file_name,
                     "url": file_url
                 }
             }
-    
+        
+            # Convert the payload to JSON format
             data = json.dumps(file_data)
         else:
             # No PDF found, only send text
@@ -269,7 +270,8 @@ class ERPGulfNotification(Notification):
         
         # Set the headers to specify that we're sending JSON data
         headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Api-Key": settings.token  # Add the API Key from settings for authorization
         }
         
         try:
@@ -278,8 +280,11 @@ class ERPGulfNotification(Notification):
             
             # Raise an error if the response status code is not successful
             response.raise_for_status()
+            
+            # If the request is successful, you can log the success (optional)
+            frappe.log("WhatsApp message sent successfully")
         except requests.exceptions.RequestException as e:
-            # Log the error and raise an exception
+            # Log the error and raise an exception if the request fails
             frappe.log_error(frappe.get_traceback(), _("Failed to send WhatsApp message"))
             frappe.throw(f"Failed to send WhatsApp message: {str(e)}")
 
