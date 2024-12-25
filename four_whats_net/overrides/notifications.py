@@ -217,31 +217,67 @@ class ERPGulfNotification(Notification):
             frappe.log_error(frappe.get_traceback(), _("Failed to send SMS via Hormuud API"))
             frappe.throw(f"Failed to send SMS: {str(e)}")
 
-    def send_whatsapp(self, settings, phone_number, message):
+    def send_whatsapp(self, settings, phone_number, message, doc):
         # Retrieve the API URL from settings
         api_url = settings.api_url  # Assuming settings.api_url contains the base URL
         session = settings.instance_id
-    
+        
         # Construct the full URL by appending the specific endpoint
         url = f"{api_url}/api/sendText"
         
-        # Prepare the data payload as a dictionary
-        data = {
-            "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
-            "reply_to": None,
-            "text": message,
-            "linkPreview": True,
-            "session": session
-        }
+        # Fetch the doctype and document name dynamically
+        document_name = doc.name
+        document_doctype = doc.doctype
+        
+        # Fetch the attached files related to the document, dynamically using the doctype and name
+        file_records = frappe.get_all('File', filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, fields=['file_url', 'file_name', 'file_size', 'mimetype', 'attached_to_name', 'attached_to_doctype'])
+        
+        # Filter for PDF files specifically
+        pdf_file = next((file for file in file_records if file['mimetype'] == 'application/pdf'), None)
+        
+        if pdf_file:
+            # If a PDF file is found, extract necessary details
+            file_url = pdf_file['file_url']
+            mimetype = pdf_file['mimetype']
+            file_name = pdf_file['file_name']
+            attached_to_name = pdf_file['attached_to_name']
+            attached_to_doctype = pdf_file['attached_to_doctype']
+            
+            # You can log or use `attached_to_name` and `attached_to_doctype` if you need to reference the document
+            frappe.log_error(f"Sending file from Document: {attached_to_doctype} - {attached_to_name}", "WhatsApp Notification")
+            
+            # Prepare the data payload to send the file
+            file_data = {
+                "session": session,
+                "caption": message,  # You can modify this if you want a custom caption for the file
+                "chatId": f"{phone_number}@c.us",
+                "file": {
+                    "mimetype": mimetype,
+                    "filename": file_name,
+                    "url": file_url
+                }
+            }
     
+            url = f"{api_url}/api/sendFile"  # Change endpoint for sending files
+            data = json.dumps(file_data)
+        else:
+            # No PDF found, only send text
+            data = json.dumps({
+                "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
+                "reply_to": None,
+                "text": message,
+                "linkPreview": True,
+                "session": session
+            })
+        
         # Set the headers to specify that we're sending JSON data
         headers = {
             "Content-Type": "application/json"
         }
-    
+        
         try:
             # Send the POST request with the JSON data and headers
-            response = requests.post(url, data=json.dumps(data), headers=headers)
+            response = requests.post(url, data=data, headers=headers)
             
             # Raise an error if the response status code is not successful
             response.raise_for_status()
