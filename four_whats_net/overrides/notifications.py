@@ -217,76 +217,43 @@ class ERPGulfNotification(Notification):
             frappe.log_error(frappe.get_traceback(), _("Failed to send SMS via Hormuud API"))
             frappe.throw(f"Failed to send SMS: {str(e)}")
 
+
     def send_whatsapp(self, settings, phone_number, message, doc):
         api_url = settings.api_url  # Assuming settings.api_url contains the base URL
         session = settings.instance_id  # Session ID from the settings
+    
+        # Construct the full URL for sending the text message
+        url = f"{api_url}/api/sendText"
         
-        # Construct the full URL for sending the file
-        url = f"{api_url}/api/sendFile"
-        
-        # Fetch the doctype and document name dynamically
-        document_name = doc.name
-        document_doctype = doc.doctype
-        
-        # Fetch the attached files related to the document dynamically using the doctype and name
-        file_records = frappe.get_all(
-            'File', 
-            filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, 
-            fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype']
-        )
-        
-        # Filter for PDF files specifically
-        pdf_file = next((file for file in file_records if file['file_type'] == 'PDF'), None)
-        
-        if pdf_file:
-            # If a PDF file is found, extract necessary details
-            file_url = pdf_file['file_url']
-            file_type = pdf_file['file_type']  # This will be 'PDF'
-            file_name = pdf_file['file_name']
-        
-            # Prepare the data payload to send the file
-            file_data = {
-                "session": session,
-                "caption": message,  # You can modify this if you want a custom caption for the file
-                "chatId": f"{phone_number}@c.us",
-                "file": {
-                    "mimetype": "application/pdf",  # Set the mimetype as 'application/pdf'
-                    "filename": file_name,
-                    "url": file_url
-                }
-            }
-        
-            # Convert the payload to JSON format
-            data = json.dumps(file_data)
-        else:
-            # No PDF found, only send text
-            data = json.dumps({
-                "chatId": f"{phone_number}@c.us",  # Append @c.us to the phone number
-                "reply_to": None,
-                "text": message,
-                "linkPreview": True,
-                "session": session
-            })
-        
+        # Prepare the data payload to send the text message
+        data = {
+            "session": session,  # Use the session ID from settings
+            "chatId": f"{phone_number}@c.us",  # Format phone number as chat ID
+            "text": message  # The message text
+        }
+    
+        # Convert the payload to JSON format
+        data_json = json.dumps(data)
+    
         # Set the headers to specify that we're sending JSON data
         headers = {
             "Content-Type": "application/json",
-            "X-Api-Key": settings.token  # Add the API Key from settings for authorization
         }
-        
+    
         try:
             # Send the POST request with the JSON data and headers
-            response = requests.post(url, data=data, headers=headers)
+            response = requests.post(url, data=data_json, headers=headers)
             
             # Raise an error if the response status code is not successful
             response.raise_for_status()
             
-            # If the request is successful, you can log the success (optional)
+            # If the request is successful, log the success
             frappe.log("WhatsApp message sent successfully")
         except requests.exceptions.RequestException as e:
             # Log the error and raise an exception if the request fails
             frappe.log_error(frappe.get_traceback(), _("Failed to send WhatsApp message"))
             frappe.throw(f"Failed to send WhatsApp message: {str(e)}")
+
 
     def create_message_record(self, phone, message):
         """Create a new record in the Four Whats Messages doctype."""
