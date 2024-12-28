@@ -223,13 +223,41 @@ class ERPGulfNotification(Notification):
         session = settings.instance_id  # Session ID from the settings
     
         # Construct the full URL for sending the text message
-        url = f"{api_url}/api/sendText"
+        url = f"{api_url}/api/sendFile"
+        document_name = doc.name
+        document_doctype = doc.doctype
+
+        file_records = frappe.get_all(
+            'File', 
+            filters={'attached_to_name': document_name, 'attached_to_doctype': document_doctype}, 
+            fields=['file_url', 'file_name', 'file_size', 'file_type', 'attached_to_name', 'attached_to_doctype']
+        )
+
+        pdf_file = next((file for file in file_records if file['file_type'] == 'PDF'), None)
+
+        if pdf_file:
+            # If a PDF file is found, extract necessary details
+            file_url = pdf_file['file_url']
+            file_type = pdf_file['file_type']
+            file_type = pdf_file['file_type']  # This will be 'PDF'
+            file_name = pdf_file['file_name']
         
         # Prepare the data payload to send the text message
+        # data = {
+        #     "session": session,  # Use the session ID from settings
+        #     "chatId": f"{phone_number}@c.us",  # Format phone number as chat ID
+        #     "text": message  # The message text
+        # }
+
         data = {
-            "session": session,  # Use the session ID from settings
-            "chatId": f"{phone_number}@c.us",  # Format phone number as chat ID
-            "text": message  # The message text
+	        "session":session,
+	        "caption": message,
+	        "chatId": f"{phone_number}@c.us",
+        	"file": {
+	        "mimetype": "application/pdf",
+		    "filename": file_name,
+		    "url":  file_url
+        }
         }
     
         # Convert the payload to JSON format
