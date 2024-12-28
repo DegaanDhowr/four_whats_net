@@ -237,7 +237,7 @@ class ERPGulfNotification(Notification):
 
         if pdf_file:
             # If a PDF file is found, extract necessary details
-            file_url = pdf_file['file_url']
+            file_url = "https://erp.degaandhowr.com" + pdf_file['file_url']
             file_type = pdf_file['file_type']
             file_type = pdf_file['file_type']  # This will be 'PDF'
             file_name = pdf_file['file_name']
@@ -259,10 +259,14 @@ class ERPGulfNotification(Notification):
 		    "url":  file_url
         }
         }
+
+        # print(data)
     
         # Convert the payload to JSON format
         data_json = json.dumps(data)
-    
+
+        print(data_json)
+        print("_________________________________________________________")
         # Set the headers to specify that we're sending JSON data
         headers = {
             "Content-Type": "application/json",
@@ -271,6 +275,8 @@ class ERPGulfNotification(Notification):
         try:
             # Send the POST request with the JSON data and headers
             response = requests.post(url, data=data_json, headers=headers)
+
+            print(response)
             
             # Raise an error if the response status code is not successful
             response.raise_for_status()
